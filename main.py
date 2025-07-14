@@ -1,14 +1,12 @@
 import logging
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import datetime
 
-import asyncio
-import os
-from datetime import datetime
-
-API_TOKEN = os.getenv("API_TOKEN")
-CHAT_ID = int(os.getenv("CHAT_ID"))
+API_TOKEN = os.getenv('API_TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
@@ -17,36 +15,26 @@ scheduler = AsyncIOScheduler()
 
 schedule = [
     ("09:50", "Kompyuterga tayyorlan: Word hujjati, shrift, PDF"),
-    ("17:20", "Ichki ishlar: Ma’muriy kodeks, yozma topshiriq"),
+    ("17:20", "Ichki ishlar: Ma’muriy kodeksni och, yozma topshiriqni bajargin"),
     ("19:50", "Jismoniy mashq: Plank, Push-up, press, burpee"),
-    ("21:50", "Word yoki Excel topshirig‘i"),
-    ("22:50", "Tahlil yozish va kun xulosasi")
+    ("21:50", "Word yoki Excel topshirigʻini tugatish va tekshirish"),
+    ("22:50", "Tahlil yozish va kunni xulosa qilish vaqti")
 ]
 
-keyboard = types.InlineKeyboardMarkup()
-keyboard.add(types.InlineKeyboardButton("✅ Bajarildi", callback_data="done"))
-keyboard.add(types.InlineKeyboardButton("❌ O‘tkazib yuborildi", callback_data="skip"))
-
 @dp.message_handler(commands=['start'])
-async def welcome(msg: types.Message):
-    await msg.reply("Salom Abror! Eslatma boti ishga tushdi.")
+async def send_welcome(message: types.Message):
+    await message.reply("Salom! Abrorning eslatma boti ishga tushdi.")
 
-@dp.callback_query_handler()
-async def cb_handler(call: types.CallbackQuery):
-    if call.data == "done":
-        await call.message.answer("Zo‘r — bajarildi ✅")
-    elif call.data == "skip":
-        await call.message.answer("O‘tkazib yuborildi ❌")
-
-def setup_schedule():
-    for t, txt in schedule:
-        hr, mn = map(int, t.split(":"))
-        scheduler.add_job(send_reminder, 'cron', hour=hr, minute=mn, args=[txt])
+def schedule_messages():
+    for time_str, text in schedule:
+        hour, minute = map(int, time_str.split(":"))
+        scheduler.add_job(send_reminder, 'cron', hour=hour, minute=minute, args=[text])
 
 async def send_reminder(text):
-    await bot.send_message(CHAT_ID, f"⏰ {text}", reply_markup=keyboard)
+    if CHAT_ID:
+        await bot.send_message(chat_id=CHAT_ID, text=f"⏰ {text}")
 
-if name == "main":
-    setup_schedule()
+if name == 'main':
+    schedule_messages()
     scheduler.start()
     executor.start_polling(dp, skip_updates=True)
